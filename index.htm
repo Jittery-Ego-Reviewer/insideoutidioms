@@ -13,12 +13,18 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <style>
-        body {
+        html, body {
+            height: 100%;
+            margin: 0;
             background-color: #f0f2f5;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             touch-action: manipulation; /* Prevent double-tap zoom */
         }
         
+        #root {
+            height: 100%;
+        }
+
         /* WhatsApp Theme Styles */
         .wa-bg {
             background-color: #efeae2;
@@ -363,7 +369,7 @@
                 setFeedback(null);
                 
                 if (mode === 'arcade' && !wasCharGuess) {
-                    // 如果是街機模式，且剛才「不是」在猜角色（代表剛猜完成語），則進入猜角色階段
+                    // 如果是遊戲模式，且剛才「不是」在猜角色（代表剛猜完成語），則進入猜角色階段
                     setGuessingChar(true);
                     setMessages(prev => [...prev, { 
                         id: Date.now(), 
@@ -442,7 +448,7 @@
                         <ul className="list-disc pl-5 space-y-1">
                             <li>觀察對話中的 Emoji。</li>
                             <li>輸入或選擇正確的成語。</li>
-                            <li>街機模式需額外猜測是哪位腦朋友！</li>
+                            <li>遊戲模式需額外猜測是哪位腦朋友！</li>
                         </ul>
                     </div>
                 </div>
@@ -454,7 +460,7 @@
                         <button onClick={() => setGameState('menu')} className="mr-3 p-1 rounded-full hover:bg-white/20 active:bg-white/30">
                             <SvgIcons.Back />
                         </button>
-                        <h2 className="text-xl font-bold">選擇聊天對象 (學習模式)</h2>
+                        <h2 className="text-xl font-bold">選擇聊天對象</h2>
                     </div>
                     <div className="flex-1 overflow-y-auto">
                         {CHARACTERS.map(char => (
@@ -482,7 +488,7 @@
                         <button onClick={() => setGameState('menu')} className="mr-3 p-1 rounded-full hover:bg-white/20 active:bg-white/30">
                             <SvgIcons.Back />
                         </button>
-                        <h2 className="text-xl font-bold">街機模式設定</h2>
+                        <h2 className="text-xl font-bold">遊戲模式設定</h2>
                     </div>
                     <div className="flex flex-col items-center flex-1 p-6 text-center overflow-y-auto">
                         <h3 className="text-2xl font-bold text-gray-800 mb-6 shrink-0 mt-4">選擇回合數量</h3>
@@ -704,7 +710,7 @@
 
             // App Container Layout
             return (
-                <div className="w-full h-screen max-w-md mx-auto bg-white shadow-2xl overflow-hidden relative sm:h-[90vh] sm:mt-[5vh] sm:rounded-[2rem] sm:border-8 border-gray-900">
+                <div className="w-full h-[100dvh] md:h-[90vh] md:max-w-md mx-auto bg-white shadow-2xl overflow-hidden relative md:mt-[5vh] md:rounded-[2rem] md:border-8 md:border-gray-900 flex flex-col">
                     {gameState === 'menu' && renderMenu()}
                     {gameState === 'char_select' && renderCharSelect()}
                     {gameState === 'mode_select' && renderModeSelect()}
@@ -719,4 +725,3 @@
     </script>
 </body>
 </html>
-
