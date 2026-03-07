@@ -3,615 +3,719 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>情緒成語大挑戰</title>
+    <title>腦朋友成語通 (Inside Out Idiom Chat)</title>
+    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for in-browser JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@400;700&display=swap');
-
         body {
-            font-family: 'Noto Sans HK', sans-serif;
-            background-color: #e5ddd5;
-            margin: 0;
-            overflow: hidden; /* Prevent pull-to-refresh on mobile */
+            background-color: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            touch-action: manipulation; /* Prevent double-tap zoom */
+        }
+        
+        /* WhatsApp Theme Styles */
+        .wa-bg {
+            background-color: #efeae2;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .wa-header { background-color: #008069; color: white; }
+        .wa-message-received { background-color: #ffffff; border-radius: 0 8px 8px 8px; }
+        .wa-message-sent { background-color: #d9fdd3; border-radius: 8px 0 8px 8px; }
+        
+        /* Animations */
+        .msg-enter {
+            animation: popIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        }
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* WhatsApp Theme Colors */
-        :root {
-            --wa-teal: #075e54;
-            --wa-light-teal: #128c7e;
-            --wa-bg: #efe7dd;
-            --wa-bubble-in: #ffffff;
-            --wa-bubble-out: #dcf8c6;
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 8px 12px;
+            width: fit-content;
+        }
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #8696a0;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
         }
 
-        /* Chat Background Pattern */
-        .chat-bg {
-            background-color: var(--wa-bg);
-            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5V18H0v-2h20v-2H0v-2h20v-2H0V8h20V6H0V4h20V2H0V0h22v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h2v2H20v-1.5zM0 20h2v20H0V20zm4 0h2v20H4V20zm4 0h2v20H8V20zm4 0h2v20h-2V20zm4 0h2v20h-2V20zm4 4h20v2H20v-2zm0 4h20v2H20v-2zm0 4h20v2H20v-2zm0 4h20v2H20v-2z' fill='%23000000' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
-        }
-
-        /* Bubble Styles */
-        .bubble {
-            max-width: 85%;
-            padding: 10px 14px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            position: relative;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            font-size: 1.125rem;
-            line-height: 1.5;
-            animation: fadeIn 0.3s ease-out;
-            word-wrap: break-word;
-        }
-
-        .bubble-in {
-            background-color: var(--wa-bubble-in);
-            align-self: flex-start;
-            border-top-left-radius: 0;
-        }
-
-        .bubble-in::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -10px;
-            width: 0;
-            height: 0;
-            border-top: 10px solid var(--wa-bubble-in);
-            border-left: 10px solid transparent;
-        }
-
-        .bubble-out {
-            background-color: var(--wa-bubble-out);
-            align-self: flex-end;
-            border-top-right-radius: 0;
-        }
-
-        .bubble-out::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: -10px;
-            width: 0;
-            height: 0;
-            border-top: 10px solid var(--wa-bubble-out);
-            border-right: 10px solid transparent;
-        }
-
-        .emoji-text {
-            font-size: 2.5rem;
-            letter-spacing: 0.2rem;
-            text-align: center;
-            display: block;
-            margin: 5px 0;
-        }
-
-        /* Character Button Colors */
-        .char-joy { background-color: #FDE047; color: #854D0E; }
-        .char-sadness { background-color: #93C5FD; color: #1E3A8A; }
-        .char-anger { background-color: #FCA5A5; color: #7F1D1D; }
-        .char-fear { background-color: #D8B4FE; color: #4C1D95; }
-        .char-disgust { background-color: #86EFAC; color: #14532D; }
-        .char-anxiety { background-color: #FDBA74; color: #7C2D12; }
-        .char-envy { background-color: #5EEAD4; color: #134E4A; }
-        .char-ennui { background-color: #94A3B8; color: #1E293B; }
-        .char-embarrassment { background-color: #F9A8D4; color: #831843; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes pop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .shake {
-            animation: shake 0.5s;
-        }
-
-        @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
-            100% { transform: translateX(0); }
-        }
-
-        /* Custom Scrollbar for chat */
-        #chat-container::-webkit-scrollbar { width: 6px; }
-        #chat-container::-webkit-scrollbar-track { background: transparent; }
-        #chat-container::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 10px; }
-
-        /* Timer Bar */
-        .timer-bar {
-            transition: width 1s linear;
-        }
-
-        /* 大螢幕自動等比例放大 (Auto-scale for large screens) */
-        @media (min-width: 768px) and (min-height: 700px) { html { font-size: 18px; } }
-        @media (min-width: 1024px) and (min-height: 800px) { html { font-size: 20px; } }
-        @media (min-width: 1280px) and (min-height: 900px) { html { font-size: 24px; } }
-        @media (min-width: 1536px) and (min-height: 1000px) { html { font-size: 28px; } }
+        /* Hide scrollbar for character list */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="flex justify-center items-center h-screen">
+<body>
+    <div id="root"></div>
 
-    <!-- App Container -->
-    <div class="w-full max-w-md h-full sm:h-[95vh] bg-white sm:rounded-[2rem] sm:shadow-2xl overflow-hidden flex flex-col relative border-4 border-gray-800">
-        
-        <!-- START SCREEN -->
-        <div id="start-screen" class="absolute inset-0 z-50 flex flex-col justify-center items-center p-4 text-center chat-bg overflow-y-auto">
-            <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-lg border-2 border-[var(--wa-light-teal)] w-full max-h-full flex flex-col">
-                <div class="text-4xl sm:text-5xl mb-2 sm:mb-4 shrink-0">🧠📱</div>
-                <h1 class="text-xl sm:text-2xl font-bold text-gray-800 mb-1 sm:mb-2 shrink-0">情緒成語大挑戰</h1>
-                <h2 class="text-sm sm:text-md text-[var(--wa-teal)] font-bold mb-3 sm:mb-4 shrink-0">Inside Out x WhatsApp 篇</h2>
-                
-                <div class="text-left text-gray-700 space-y-2 sm:space-y-3 mb-4 sm:mb-6 bg-gray-50 p-3 sm:p-4 rounded-lg text-xs sm:text-sm overflow-y-auto">
-                    <p>🎯 <strong>目標：</strong>看 Emoji 猜出描述情緒的成語，並找出對應的腦朋友！</p>
-                    <p>🎮 <strong>玩法：</strong></p>
-                    <ol class="list-decimal pl-5 space-y-1">
-                        <li>系統會發送 4 個 Emoji 密碼。</li>
-                        <li>你有 45 秒可以思考。</li>
-                        <li>時間到（或按鈕）後會出現 3 個成語選項。</li>
-                        <li>選出正確成語後，再猜猜是哪個角色的心聲！</li>
-                    </ol>
-                    <div class="mt-4 pt-3 border-t border-gray-200">
-                        <p class="text-center font-bold text-gray-700 mb-2">請選擇回合數量：</p>
-                        <div class="flex justify-center gap-2">
-                            <button id="btn-round-5" onclick="setRounds(5)" class="round-btn px-4 py-2 rounded-lg border-2 border-[var(--wa-light-teal)] bg-white text-[var(--wa-light-teal)] font-bold active:scale-95 transition">5 回合</button>
-                            <button id="btn-round-10" onclick="setRounds(10)" class="round-btn px-4 py-2 rounded-lg border-2 border-[var(--wa-light-teal)] bg-[var(--wa-light-teal)] text-white font-bold active:scale-95 transition">10 回合</button>
-                            <button id="btn-round-19" onclick="setRounds(19)" class="round-btn px-4 py-2 rounded-lg border-2 border-[var(--wa-light-teal)] bg-white text-[var(--wa-light-teal)] font-bold active:scale-95 transition">全部 (19)</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <button onclick="startGame()" class="w-full bg-[var(--wa-light-teal)] hover:bg-[var(--wa-teal)] text-white font-bold py-3 sm:py-4 px-8 rounded-xl text-lg sm:text-xl shadow-md transform transition active:scale-95 shrink-0">
-                    開始遊戲
-                </button>
-            </div>
-        </div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-        <!-- HEADER -->
-        <div class="bg-[var(--wa-teal)] text-white p-3 flex items-center shadow-md z-10 relative">
-            <div class="w-10 h-10 bg-white rounded-full flex justify-center items-center text-2xl mr-3 overflow-hidden">
-                🤖
-            </div>
-            <div class="flex-1">
-                <h2 class="font-bold text-lg leading-tight">成語小導師</h2>
-                <p class="text-xs text-green-200">在線 · 第 <span id="round-display">1</span>/<span id="total-rounds-display">10</span> 回合</p>
-            </div>
-            <div class="text-right">
-                <p class="text-xs text-white opacity-80">分數</p>
-                <p id="score-display" class="font-bold text-xl text-yellow-300">0</p>
-            </div>
-        </div>
-
-        <!-- CHAT AREA -->
-        <div id="chat-container" class="flex-1 overflow-y-auto p-4 flex flex-col chat-bg relative">
-            <!-- Messages will be injected here -->
-        </div>
-
-        <!-- TIMER BAR -->
-        <div id="timer-container" class="h-1.5 w-full bg-gray-200 hidden">
-            <div id="timer-bar" class="h-full bg-[var(--wa-light-teal)] w-full timer-bar"></div>
-        </div>
-
-        <!-- CONTROLS AREA (Input panel) -->
-        <div id="controls-area" class="bg-gray-100 p-3 border-t border-gray-300 min-h-[100px] flex items-center justify-center">
-            
-            <!-- Default thinking state -->
-            <div id="panel-thinking" class="w-full hidden">
-                <p class="text-center text-sm text-gray-500 mb-2">正在思考中... (剩餘 <span id="time-left">45</span> 秒)</p>
-                <button onclick="skipTimer()" class="w-full bg-white border-2 border-[var(--wa-light-teal)] text-[var(--wa-light-teal)] font-bold py-3 rounded-xl hover:bg-gray-50 transition active:scale-95">
-                    我需要選項提示 💡
-                </button>
-            </div>
-
-            <!-- Idiom Selection State -->
-            <div id="panel-idioms" class="w-full hidden grid-cols-1 gap-2">
-                <!-- Buttons injected via JS -->
-            </div>
-
-            <!-- Character Selection State -->
-            <div id="panel-characters" class="w-full hidden">
-                <p class="text-center text-sm font-bold text-gray-700 mb-2">誰會說這句話？</p>
-                <div class="grid grid-cols-3 gap-2">
-                    <button onclick="checkCharacter('阿樂')" class="char-joy font-bold py-2 rounded-lg shadow-sm border border-black/10 active:scale-95 transition">阿樂 😀</button>
-                    <button onclick="checkCharacter('阿愁')" class="char-sadness font-bold py-2 rounded-lg shadow-sm border border-black/10 active:scale-95 transition">阿愁 😢</button>
-                    <button onclick="checkCharacter('阿燥')" class="char-anger font-bold py-2 rounded-lg shadow-sm border border-black/10 active:scale-95 transition">阿燥 😡</button>
-                    <button onclick="checkCharacter('阿驚')" class="char-fear font-bold py-2 rounded-lg shadow-sm border border-black/10 active:scale-95 transition">阿驚 😱</button>
-                    <button onclick="checkCharacter('阿憎')" class="char-disgust font-bold py-2 rounded-lg shadow-sm border border-black/10 active:scale-95 transition">阿憎 🤢</button>
-                    <button onclick="checkCharacter('阿焦')" class="char-anxiety font-bold py-2 rounded-lg shadow-sm border border-black/10 active:scale-95 transition">阿焦 🫨</button>
-                    <button onclick="checkCharacter('阿羨')" class="char-envy font-bold py-2 rounded-lg shadow-sm border border-black/10 active:scale-95 transition">阿羨 🥺</button>
-                    <button onclick="checkCharacter('阿厭')" class="char-ennui font-bold py-2 rounded-lg shadow-sm border border-black/10 active:scale-95 transition">阿厭 😒</button>
-                    <button onclick="checkCharacter('阿尷')" class="char-embarrassment font-bold py-2 rounded-lg shadow-sm border border-black/10 active:scale-95 transition">阿尷 😳</button>
-                </div>
-            </div>
-
-            <!-- Next Round State -->
-            <div id="panel-next" class="w-full hidden">
-                <button onclick="startNextRound()" class="w-full bg-[var(--wa-teal)] text-white font-bold py-4 rounded-xl shadow-md text-lg active:scale-95 transition pop">
-                    進入下一回合 ➡️
-                </button>
-            </div>
-        </div>
-
-        <!-- END SCREEN -->
-        <div id="end-screen" class="absolute inset-0 bg-white z-50 hidden flex-col justify-center items-center p-6 text-center chat-bg">
-            <div class="bg-white p-8 rounded-2xl shadow-lg border-2 border-[var(--wa-light-teal)] w-full max-w-sm">
-                <div class="text-6xl mb-4">🏆</div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">遊戲完成！</h1>
-                <p class="text-gray-600 mb-6">你總共獲得了</p>
-                
-                <div class="text-5xl font-extrabold text-yellow-500 mb-2 flex justify-center items-center gap-2">
-                    <span id="final-score">0</span> <span class="text-4xl">🌟</span>
-                </div>
-                
-                <p id="feedback-message" class="text-lg font-bold text-[var(--wa-teal)] mb-8 bg-green-50 p-3 rounded-lg">
-                    太棒了！你已經是情緒成語大師！
-                </p>
-                
-                <button onclick="location.reload()" class="w-full bg-[var(--wa-light-teal)] hover:bg-[var(--wa-teal)] text-white font-bold py-4 px-8 rounded-xl text-xl shadow-md transform transition active:scale-95">
-                    再次挑戰
-                </button>
-            </div>
-        </div>
-
-    </div>
-
-    <script>
-        // --- DATA ---
-        const allIdiomsData = [
-            { idiom: "心花怒放", emojis: "❤️ 🌸 😡 🎇", meaning: "心裡像花開一樣快樂，充滿喜悅。", char: "阿樂" },
-            { idiom: "歡天喜地", emojis: "😀 🌤️ 🎊 🌍", meaning: "形容非常高興，好像天地都在歡喜。", char: "阿樂" },
-            { idiom: "笑口常開", emojis: "😀 👄 🌸 🔓", meaning: "總是笑容滿面，心情愉快。", char: "阿樂" },
-            { idiom: "眉飛色舞", emojis: "🤨 🕊 🎨 💃", meaning: "眉眼生動，神采飛揚，形容非常高興。", char: "阿樂" },
-            { idiom: "愁眉苦臉", emojis: "😞 🤨 😣 🙂", meaning: "眉頭緊皺，臉上充滿憂愁。", char: "阿愁" },
-            { idiom: "悶悶不樂", emojis: "😒 😒 🙅 😀", meaning: "心情鬱悶，不快樂。", char: "阿愁" }, // Can also be Ennui, mapping to primary
-            { idiom: "痛哭流涕", emojis: "😭 😢 💧 🤧", meaning: "大聲哭泣，眼淚鼻涕直流。", char: "阿愁" },
-            { idiom: "心驚膽戰", emojis: "❤️ 😱 💡 ⚔", meaning: "心裡害怕，膽子發抖。", char: "阿驚" },
-            { idiom: "提心吊膽", emojis: "🧳 ❤️ 🏗 💡", meaning: "心懸著，膽子吊著，形容非常擔心。", char: "阿驚" },
-            { idiom: "坐立不安", emojis: "🧘🏻‍♀️ 🧍🏻‍♀️ 🙅🏻 😮‍💨", meaning: "焦急到不能安靜坐下。", char: "阿焦" },
-            { idiom: "心慌意亂", emojis: "❤️ 🫨 🔀 🌀", meaning: "心裡慌張，思緒混亂。", char: "阿焦" },
-            { idiom: "嗤之以鼻", emojis: "😤 ➡️ ✋ 👃", meaning: "用鼻子冷笑，表示不屑。", char: "阿憎" },
-            { idiom: "怒氣沖天", emojis: "😡 💨 🚀 ⛅", meaning: "怒氣衝上天際，形容非常生氣。", char: "阿燥" },
-            { idiom: "火冒三丈", emojis: "🔥 💨 3️⃣ 📏", meaning: "形容怒火衝天，非常憤怒。", char: "阿燥" },
-            { idiom: "怒火中燒", emojis: "😡 🔥 🀄 ❤️‍🔥", meaning: "心裡充滿怒火，像在燃燒。", char: "阿燥" },
-            { idiom: "面紅耳赤", emojis: "🙂 🔴 👂 🔴", meaning: "因尷尬或緊張而臉紅耳赤。", char: "阿尷" },
-            { idiom: "爭風吃醋", emojis: "🤼🏻 🌬️ 😋 🍶", meaning: "因嫉妒而爭吵，形容吃醋。", char: "阿羨" },
-            { idiom: "無地自容", emojis: "🈚 🌍 💁🏻 💆", meaning: "羞愧到沒有地方可以藏身。", char: "阿尷" },
-            { idiom: "百無聊賴", emojis: "💯 🙅🏻 🗣️ 🧑🏻‍🦯", meaning: "形容精神上沒有依托，非常無聊。", char: "阿厭" }
+        // --- Data Definitions ---
+        const CHARACTERS = [
+            { id: 'joy', name: '阿樂 (Joy)', icon: '😄', color: 'bg-yellow-400', textColor: 'text-yellow-800' },
+            { id: 'sadness', name: '阿愁 (Sadness)', icon: '💧', color: 'bg-blue-500', textColor: 'text-blue-100' },
+            { id: 'anger', name: '阿燥 (Anger)', icon: '🔥', color: 'bg-red-600', textColor: 'text-red-100' },
+            { id: 'fear', name: '阿驚 (Fear)', icon: '😱', color: 'bg-purple-500', textColor: 'text-purple-100' },
+            { id: 'disgust', name: '阿憎 (Disgust)', icon: '🥦', color: 'bg-green-500', textColor: 'text-green-100' },
+            { id: 'anxiety', name: '阿焦 (Anxiety)', icon: '🫨', color: 'bg-orange-500', textColor: 'text-orange-100' },
+            { id: 'envy', name: '阿羨 (Envy)', icon: '👀', color: 'bg-teal-400', textColor: 'text-teal-900' },
+            { id: 'ennui', name: '阿厭 (Ennui)', icon: '🛋️', color: 'bg-indigo-900', textColor: 'text-indigo-100' },
+            { id: 'embarrassment', name: '阿尷 (Embarrassment)', icon: '😳', color: 'bg-pink-400', textColor: 'text-pink-900' }
         ];
 
-        // --- GAME STATE ---
-        let gameData = [];
-        let currentRound = 0;
-        let totalRounds = 10;
-        let score = 0;
-        let timerInterval;
-        let timeRemaining = 45;
-        let currentQuestion = null;
+        const IDIOMS = [
+            { text: '心花怒放', emojis: '❤️ 🌸 😡 🎇', meaning: '心裡像花開一樣快樂，充滿喜悅。', charId: 'joy' },
+            { text: '歡天喜地', emojis: '😀 🌤️ 🎊 🌍', meaning: '形容非常高興，好像天地都在歡喜。', charId: 'joy' },
+            { text: '笑口常開', emojis: '😀 👄 🔁 🔓', meaning: '總是笑容滿面，心情愉快。', charId: 'joy' },
+            { text: '眉飛色舞', emojis: '🤨 🕊 🎨 💃', meaning: '眉眼生動，神采飛揚，形容非常高興。', charId: 'joy' },
+            { text: '愁眉苦臉', emojis: '😞 🤨 😣 🙂', meaning: '眉頭緊皺，臉上充滿憂愁。', charId: 'sadness' },
+            { text: '悶悶不樂', emojis: '😒 😒 🙅 😀', meaning: '心情鬱悶，不快樂。', charId: 'sadness' },
+            { text: '痛哭流涕', emojis: '😭 😢 💧 🤧', meaning: '大聲哭泣，眼淚鼻涕直流。', charId: 'sadness' },
+            { text: '心驚膽戰', emojis: '❤️ 😱 💡 ⚔', meaning: '心裡害怕，膽子發抖。', charId: 'fear' },
+            { text: '提心吊膽', emojis: '🧳 ❤️ 🏗 💡', meaning: '心懸著，膽子吊著，形容非常擔心。', charId: 'fear' },
+            { text: '坐立不安', emojis: '🧘🏻‍♀️ 🧍🏻‍♀️🙅🏻 😮‍💨', meaning: '焦急到不能安靜坐下。', charId: 'anxiety' },
+            { text: '心慌意亂', emojis: '❤️ 🫨 💭🌀', meaning: '心裡慌張，思緒混亂。', charId: 'anxiety' },
+            { text: '忐忑不安', emojis: '📈📉🙅‍♂️😮‍💨', meaning: '心神不定，非常不安。', charId: 'anxiety' },
+            { text: '嗤之以鼻', emojis: '😤 ➡️ ✋ 👃', meaning: '用鼻子冷笑，表示不屑。', charId: 'disgust' },
+            { text: '怒氣沖天', emojis: '😡 💨 🚀 ⛅', meaning: '怒氣衝上天際，形容非常生氣。', charId: 'anger' },
+            { text: '火冒三丈', emojis: '🔥🌫️ 3️⃣ 📏', meaning: '形容怒火衝天，非常憤怒。', charId: 'anger' },
+            { text: '怒火中燒', emojis: '😡 🔥 🀄 ❤️‍🔥', meaning: '心裡充滿怒火，像在燃燒。', charId: 'anger' },
+            { text: '怒髮衝冠', emojis: '😡 💇‍♂️ ⏫ 👑', meaning: '形容盛怒的樣子。', charId: 'anger' },
+            { text: '面紅耳赤', emojis: '🙂 🔴 👂 🔴', meaning: '因尷尬或緊張而臉紅耳赤。', charId: 'embarrassment' },
+            { text: '無地自容', emojis: '🙅🏻 🌍 💁🏻 🙂', meaning: '羞愧到沒有地方可以藏身。', charId: 'embarrassment' },
+            { text: '爭風吃醋', emojis: '🤼🏻🌬️ 😋🍶', meaning: '因嫉妒而爭吵，形容吃醋。', charId: 'envy' },
+            { text: '百無聊賴', emojis: '💯 🙅🏻 🗣️🧑🏻‍🦯', meaning: '形容精神上沒有依托，非常無聊。', charId: 'ennui' },
+            { text: '無所事事', emojis: '🈚 🙆‍♂️ 👐📋', meaning: '什麼事也不做，形容閒蕩無事的樣子。', charId: 'ennui' },
+            { text: '冷眼旁觀', emojis: '🧊 👀 🙎‍♂️ 🔭', meaning: '形容置身事外；毫不動心地在一旁靜觀事態變化。', charId: 'ennui' }
+        ];
 
-        // --- ROUND SELECTION ---
-        function setRounds(num) {
-            totalRounds = num;
-            document.querySelectorAll('.round-btn').forEach(btn => {
-                btn.classList.remove('bg-[var(--wa-light-teal)]', 'text-white');
-                btn.classList.add('bg-white', 'text-[var(--wa-light-teal)]');
-            });
-            const selectedBtn = document.getElementById(`btn-round-${num}`);
-            if (selectedBtn) {
-                selectedBtn.classList.remove('bg-white', 'text-[var(--wa-light-teal)]');
-                selectedBtn.classList.add('bg-[var(--wa-light-teal)]', 'text-white');
-            }
-        }
-
-        // --- AUDIO SYNTHESIS (Self-contained, no external files) ---
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        let audioCtx;
-
-        function initAudio() {
+        // --- Audio Context for Feedback ---
+        let audioCtx = null;
+        const playSound = (type) => {
             if (!audioCtx) {
-                audioCtx = new AudioContext();
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
-        }
-
-        function playSound(type) {
-            initAudio();
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
-            
             const osc = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             osc.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-
+            
             if (type === 'correct') {
-                // Happy chime
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
                 osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
                 osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
-                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.5);
-            } else if (type === 'wrong') {
-                // Low boop
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(250, audioCtx.currentTime);
-                osc.frequency.setValueAtTime(200, audioCtx.currentTime + 0.1);
-                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+            } else if (type === 'incorrect') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.4);
-            } else if (type === 'msg') {
-                // WhatsApp pop sound
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.1);
             }
-        }
+        };
 
-        // --- UTILS ---
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
+        // --- Helper Components ---
+        const SvgIcons = {
+            Back: () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>),
+            Send: () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>),
+            Check: () => (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#53bdeb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>)
+        };
 
-        function scrollToBottom() {
-            const chat = document.getElementById('chat-container');
-            setTimeout(() => {
-                chat.scrollTop = chat.scrollHeight;
-            }, 50);
-        }
+        const getCurrentTime = () => {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            const ampm = hours >= 12 ? '下午' : '上午';
+            hours = hours % 12;
+            hours = hours ? hours : 12; 
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            return `${ampm} ${hours}:${minutes}`;
+        };
 
-        function hideAllPanels() {
-            document.getElementById('panel-thinking').classList.add('hidden');
-            document.getElementById('panel-idioms').classList.add('hidden');
-            document.getElementById('panel-idioms').classList.remove('grid');
-            document.getElementById('panel-characters').classList.add('hidden');
-            document.getElementById('panel-next').classList.add('hidden');
-            document.getElementById('timer-container').classList.add('hidden');
-        }
-
-        // --- UI UPDATES ---
-        function addMessage(text, type = 'in', isEmoji = false) {
-            const chat = document.getElementById('chat-container');
-            const msgDiv = document.createElement('div');
+        // --- Main App Component ---
+        const App = () => {
+            const [gameState, setGameState] = useState('menu'); // menu, char_select, mode_select, chat, summary
+            const [mode, setMode] = useState(''); // 'learning' or 'arcade'
+            const [score, setScore] = useState(0);
+            const [streak, setStreak] = useState(0);
+            const [maxStreak, setMaxStreak] = useState(0);
             
-            msgDiv.className = `bubble ${type === 'in' ? 'bubble-in' : 'bubble-out'}`;
+            // Game variables
+            const [currentRound, setCurrentRound] = useState(1);
+            const [totalRounds, setTotalRounds] = useState(5);
+            const [selectedChar, setSelectedChar] = useState(null);
+            const [idiomQueue, setIdiomQueue] = useState([]);
+            const [currentIdiom, setCurrentIdiom] = useState(null);
             
-            if (isEmoji) {
-                msgDiv.innerHTML = `<span class="emoji-text">${text}</span>`;
-            } else {
-                msgDiv.innerText = text;
-            }
-
-            chat.appendChild(msgDiv);
-            if(type === 'in') playSound('msg');
-            scrollToBottom();
-        }
-
-        // --- GAME LOGIC ---
-        function startGame() {
-            initAudio(); // Required on first user interaction
-            document.getElementById('start-screen').classList.add('hidden');
+            // Interaction states
+            const [isTyping, setIsTyping] = useState(true);
+            const [timer, setTimer] = useState(30);
+            const [showChoices, setShowChoices] = useState(false);
+            const [choices, setChoices] = useState([]);
+            const [inputText, setInputText] = useState('');
+            const [messages, setMessages] = useState([]);
             
-            // Select random idioms based on chosen totalRounds
-            gameData = shuffleArray([...allIdiomsData]).slice(0, totalRounds);
-            currentRound = 0;
-            score = 0;
-            document.getElementById('score-display').innerText = score;
-            document.getElementById('total-rounds-display').innerText = totalRounds;
-            
-            startNextRound();
-        }
+            // Feedback
+            const [feedback, setFeedback] = useState(null); // { type: 'correct'/'incorrect', msg: '' }
+            const [guessingChar, setGuessingChar] = useState(false); // For arcade mode stage 2
 
-        function startNextRound() {
-            if (currentRound >= totalRounds) {
-                showEndScreen();
-                return;
-            }
+            const timerRef = useRef(null);
+            const chatEndRef = useRef(null);
 
-            currentQuestion = gameData[currentRound];
-            currentRound++;
-            document.getElementById('round-display').innerText = currentRound;
-            
-            // 每回合自動清除對話，確保大螢幕玩家不需要往下滑動
-            const chat = document.getElementById('chat-container');
-            chat.innerHTML = '';
-            
-            hideAllPanels();
-            
-            // System message for round start
-            const roundPill = document.createElement('div');
-            roundPill.className = 'bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full self-center my-3 shadow-sm';
-            roundPill.innerText = `第 ${currentRound} 回合`;
-            chat.appendChild(roundPill);
+            // Audio Context initialization on first interaction
+            useEffect(() => {
+                const initAudio = () => {
+                    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    document.removeEventListener('click', initAudio);
+                };
+                document.addEventListener('click', initAudio);
+                return () => document.removeEventListener('click', initAudio);
+            }, []);
 
-            setTimeout(() => {
-                addMessage("請根據以下 Emoji 猜出成語：", 'in');
-                
-                setTimeout(() => {
-                    addMessage(currentQuestion.emojis, 'in', true);
-                    startTimer();
-                }, 800);
-            }, 500);
-        }
+            const scrollToBottom = () => {
+                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            };
 
-        function startTimer() {
-            hideAllPanels();
-            const panel = document.getElementById('panel-thinking');
-            const timerContainer = document.getElementById('timer-container');
-            const timerBar = document.getElementById('timer-bar');
-            
-            panel.classList.remove('hidden');
-            timerContainer.classList.remove('hidden');
-            
-            timeRemaining = 45;
-            document.getElementById('time-left').innerText = timeRemaining;
-            
-            // Reset bar instantly
-            timerBar.style.transition = 'none';
-            timerBar.style.width = '100%';
-            
-            // Force reflow
-            void timerBar.offsetWidth;
-            
-            // Start transition
-            timerBar.style.transition = 'width 1s linear';
-
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                timeRemaining--;
-                document.getElementById('time-left').innerText = timeRemaining;
-                timerBar.style.width = `${(timeRemaining / 45) * 100}%`;
-
-                if (timeRemaining <= 0) {
-                    clearInterval(timerInterval);
-                    skipTimer();
-                }
-            }, 1000);
-        }
-
-        function skipTimer() {
-            clearInterval(timerInterval);
-            document.getElementById('timer-container').classList.add('hidden');
-            showIdiomChoices();
-        }
-
-        function showIdiomChoices() {
-            hideAllPanels();
-            addMessage("請選擇正確的成語：", 'in');
-
-            // Generate distractors
-            let choices = [currentQuestion.idiom];
-            let otherIdioms = allIdiomsData.filter(item => item.idiom !== currentQuestion.idiom);
-            otherIdioms = shuffleArray(otherIdioms);
-            choices.push(otherIdioms[0].idiom);
-            choices.push(otherIdioms[1].idiom);
-            choices = shuffleArray(choices);
-
-            const panel = document.getElementById('panel-idioms');
-            panel.innerHTML = '';
-            
-            choices.forEach(choice => {
-                const btn = document.createElement('button');
-                btn.className = 'w-full bg-white border border-gray-300 rounded-xl py-3 text-lg font-bold text-gray-800 shadow-sm active:scale-95 transition mb-2';
-                btn.innerText = choice;
-                btn.onclick = () => checkIdiom(choice, btn);
-                panel.appendChild(btn);
-            });
-
-            panel.classList.remove('hidden');
-            panel.classList.add('grid');
-        }
-
-        function checkIdiom(selected, btnElement) {
-            // Disable all buttons to prevent multiple clicks
-            const buttons = document.getElementById('panel-idioms').querySelectorAll('button');
-            buttons.forEach(b => b.disabled = true);
-
-            addMessage(selected, 'out');
-
-            setTimeout(() => {
-                if (selected === currentQuestion.idiom) {
-                    playSound('correct');
-                    btnElement.classList.remove('border-gray-300', 'bg-white');
-                    btnElement.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
-                    
-                    addMessage(`✅ 答對了！\n\n【${currentQuestion.idiom}】\n意思：${currentQuestion.meaning}`, 'in');
-                    
-                    setTimeout(showCharacterPhase, 1500);
-                } else {
-                    playSound('wrong');
-                    btnElement.classList.remove('border-gray-300', 'bg-white');
-                    btnElement.classList.add('bg-red-100', 'border-red-500', 'text-red-800', 'shake');
-                    
-                    addMessage("❌ 不太對喔，再試試看！", 'in');
-                    
-                    // Re-enable buttons after a short delay
-                    setTimeout(() => {
-                        btnElement.classList.remove('bg-red-100', 'border-red-500', 'text-red-800', 'shake');
-                        btnElement.classList.add('border-gray-300', 'bg-white');
-                        buttons.forEach(b => b.disabled = false);
-                    }, 1000);
-                }
-            }, 500);
-        }
-
-        function showCharacterPhase() {
-            hideAllPanels();
-            addMessage("那麼，你覺得這是哪個角色的心情/語氣？", 'in');
-            
-            setTimeout(() => {
-                document.getElementById('panel-characters').classList.remove('hidden');
+            useEffect(() => {
                 scrollToBottom();
-            }, 500);
-        }
+            }, [messages, isTyping, showChoices, guessingChar]);
 
-        function checkCharacter(selectedChar) {
-            addMessage(selectedChar, 'out');
-            hideAllPanels(); // prevent clicking again immediately
-
-            setTimeout(() => {
-                if (selectedChar === currentQuestion.char) {
-                    playSound('correct');
-                    score++;
-                    document.getElementById('score-display').innerText = score;
-                    
-                    addMessage(`🎉 完全正確！這正是 ${currentQuestion.char} 的表現！獲得 1 🌟`, 'in');
-                    
-                    setTimeout(() => {
-                        document.getElementById('panel-next').classList.remove('hidden');
-                        scrollToBottom();
-                    }, 1000);
+            // --- Game Logic ---
+            const startGame = (selectedMode, charId = null, rounds = 5) => {
+                setMode(selectedMode);
+                setScore(0);
+                setStreak(0);
+                setMaxStreak(0);
+                setCurrentRound(1);
+                
+                let queue = [];
+                if (selectedMode === 'learning') {
+                    const char = CHARACTERS.find(c => c.id === charId);
+                    setSelectedChar(char);
+                    queue = IDIOMS.filter(i => i.charId === charId);
+                    setTotalRounds(queue.length);
                 } else {
-                    playSound('wrong');
-                    addMessage(`🤔 好像不太像 ${selectedChar} 呢...\n正確答案是：${currentQuestion.char}！`, 'in');
-                    
-                    setTimeout(() => {
-                        document.getElementById('panel-next').classList.remove('hidden');
-                        scrollToBottom();
-                    }, 1500);
+                    setSelectedChar(null);
+                    setTotalRounds(rounds);
+                    // Shuffle all idioms and take 'rounds' amount
+                    queue = [...IDIOMS].sort(() => 0.5 - Math.random()).slice(0, rounds);
                 }
-            }, 500);
-        }
+                
+                setIdiomQueue(queue);
+                startRound(queue[0], selectedMode);
+                setGameState('chat');
+            };
 
-        function showEndScreen() {
-            playSound('correct'); // final cheer
-            setTimeout(() => playSound('correct'), 300);
-            
-            document.getElementById('final-score').innerText = score;
-            const msg = document.getElementById('feedback-message');
-            
-            const percentage = score / totalRounds;
-            
-            if (score === totalRounds) {
-                msg.innerText = "太完美了！你是情緒成語大師！🏆";
-            } else if (percentage >= 0.7) {
-                msg.innerText = "非常棒！你掌握了大部分的成語！👍";
-            } else if (percentage >= 0.4) {
-                msg.innerText = "做得好！繼續努力會更進步！💪";
-            } else {
-                msg.innerText = "完成挑戰！多練習幾次會越來越熟練喔！😊";
-            }
+            const startRound = (idiom, currentMode) => {
+                setCurrentIdiom(idiom);
+                setMessages([]);
+                setIsTyping(true);
+                setShowChoices(false);
+                setFeedback(null);
+                setGuessingChar(false);
+                setInputText('');
+                
+                const roundTime = currentMode === 'learning' ? 30 : 15;
+                setTimer(roundTime);
 
-            document.getElementById('end-screen').classList.remove('hidden');
-            document.getElementById('end-screen').classList.add('flex');
-        }
+                // Simulate character typing
+                setTimeout(() => {
+                    setIsTyping(false);
+                    setMessages([{
+                        id: Date.now(),
+                        sender: 'them',
+                        text: idiom.emojis,
+                        time: getCurrentTime()
+                    }]);
+                    startTimer(roundTime, idiom);
+                }, 1500);
+            };
 
+            const startTimer = (duration, idiom) => {
+                clearInterval(timerRef.current);
+                setTimer(duration);
+                timerRef.current = setInterval(() => {
+                    setTimer(prev => {
+                        if (prev <= 1) {
+                            clearInterval(timerRef.current);
+                            handleTimeout(idiom);
+                            return 0;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
+            };
+
+            const handleTimeout = (idiom) => {
+                generateChoices(idiom || currentIdiom);
+                setShowChoices(true);
+            };
+
+            const generateChoices = (correct) => {
+                let pool = IDIOMS.filter(i => i.text !== correct.text);
+                
+                // Try to get distractors from same character emotion if possible
+                let sameCharPool = pool.filter(i => i.charId === correct.charId);
+                let selectedDistractors = [];
+                
+                if (sameCharPool.length >= 2) {
+                    selectedDistractors = sameCharPool.sort(() => 0.5 - Math.random()).slice(0, 2);
+                } else {
+                    selectedDistractors = pool.sort(() => 0.5 - Math.random()).slice(0, 2);
+                }
+                
+                const finalChoices = [correct, ...selectedDistractors].sort(() => 0.5 - Math.random());
+                setChoices(finalChoices);
+            };
+
+            const handleSendText = (e) => {
+                e.preventDefault();
+                if (!inputText.trim()) return;
+
+                const userMsg = inputText.trim();
+                setMessages(prev => [...prev, { id: Date.now(), sender: 'me', text: userMsg, time: getCurrentTime() }]);
+                setInputText('');
+
+                if (userMsg === currentIdiom.text) {
+                    handleCorrectIdiom();
+                } else {
+                    // Incorrect text guess -> immediately show choices to help
+                    playSound('incorrect');
+                    setStreak(0);
+                    clearInterval(timerRef.current);
+                    generateChoices(currentIdiom);
+                    setShowChoices(true);
+                }
+            };
+
+            const handleChoiceSelect = (choice) => {
+                clearInterval(timerRef.current);
+                setMessages(prev => [...prev, { id: Date.now(), sender: 'me', text: choice.text, time: getCurrentTime() }]);
+                setShowChoices(false);
+
+                if (choice.text === currentIdiom.text) {
+                    handleCorrectIdiom();
+                } else {
+                    handleIncorrectIdiom();
+                }
+            };
+
+            const handleCorrectIdiom = () => {
+                playSound('correct');
+                clearInterval(timerRef.current);
+                const newScore = score + 10;
+                const newStreak = streak + 1;
+                setScore(newScore);
+                setStreak(newStreak);
+                if (newStreak > maxStreak) setMaxStreak(newStreak);
+
+                setFeedback({
+                    type: 'correct',
+                    title: '答對了！🎉',
+                    text: `成語：${currentIdiom.text}\n意思：${currentIdiom.meaning}`
+                });
+            };
+
+            const handleIncorrectIdiom = () => {
+                playSound('incorrect');
+                clearInterval(timerRef.current);
+                setStreak(0);
+
+                setFeedback({
+                    type: 'incorrect',
+                    title: '再接再厲！💪',
+                    text: `正確成語是：${currentIdiom.text}\n意思：${currentIdiom.meaning}`
+                });
+            };
+
+            const nextStep = () => {
+                // 檢查剛才的 feedback 是否來自於「猜角色」階段
+                const wasCharGuess = feedback?.isCharGuess;
+                setFeedback(null);
+                
+                if (mode === 'arcade' && !wasCharGuess) {
+                    // 如果是街機模式，且剛才「不是」在猜角色（代表剛猜完成語），則進入猜角色階段
+                    setGuessingChar(true);
+                    setMessages(prev => [...prev, { 
+                        id: Date.now(), 
+                        sender: 'system', 
+                        text: '這是哪位腦朋友發的訊息？🤔', 
+                        time: getCurrentTime() 
+                    }]);
+                } else {
+                    // Move to next round
+                    if (currentRound < totalRounds) {
+                        setCurrentRound(prev => prev + 1);
+                        startRound(idiomQueue[currentRound], mode);
+                    } else {
+                        setGameState('summary');
+                    }
+                }
+            };
+
+            const handleCharGuess = (guessedCharId) => {
+                setGuessingChar(false);
+                const actualChar = CHARACTERS.find(c => c.id === currentIdiom.charId);
+                const isCorrect = guessedCharId === currentIdiom.charId;
+
+                setMessages(prev => [...prev, { 
+                    id: Date.now(), 
+                    sender: 'me', 
+                    text: CHARACTERS.find(c=>c.id === guessedCharId).name, 
+                    time: getCurrentTime() 
+                }]);
+
+                if (isCorrect) {
+                    playSound('correct');
+                    setScore(prev => prev + 5);
+                    setFeedback({
+                        type: 'correct',
+                        title: '猜對了！😍',
+                        text: `這是 ${actualChar.name} 發送的訊息。`,
+                        isCharGuess: true // 加入標記
+                    });
+                } else {
+                    playSound('incorrect');
+                    setFeedback({
+                        type: 'incorrect',
+                        title: '哎呀！😅',
+                        text: `其實這是 ${actualChar.name} 發送的訊息。`,
+                        isCharGuess: true // 加入標記
+                    });
+                }
+            };
+
+            // --- Render Functions ---
+
+            const renderMenu = () => (
+                <div className="flex flex-col items-center h-full px-6 py-10 text-center animate-[popIn_0.5s_ease-out] overflow-y-auto">
+                    <div className="w-32 h-32 shrink-0 bg-white rounded-full shadow-lg flex items-center justify-center mb-6 border-4 border-[#008069]">
+                        <span className="text-6xl">🧠</span>
+                    </div>
+                    <h1 className="text-3xl shrink-0 font-bold text-[#008069] mb-2">腦朋友成語通</h1>
+                    <p className="text-gray-600 shrink-0 mb-8">透過表情符號，猜猜腦朋友們想表達的情緒成語！</p>
+                    
+                    <button 
+                        onClick={() => setGameState('char_select')}
+                        className="w-full shrink-0 max-w-xs bg-[#008069] text-white py-4 px-6 rounded-xl text-xl font-bold mb-4 shadow-md hover:bg-[#00695c] transition transform hover:scale-105 active:scale-95"
+                    >
+                        📖 學習模式
+                    </button>
+                    <button 
+                        onClick={() => setGameState('mode_select')}
+                        className="w-full shrink-0 max-w-xs bg-purple-600 text-white py-4 px-6 rounded-xl text-xl font-bold mb-8 shadow-md hover:bg-purple-700 transition transform hover:scale-105 active:scale-95"
+                    >
+                        🎮 遊戲模式
+                    </button>
+
+                    <div className="bg-white shrink-0 p-4 rounded-xl shadow text-left text-sm text-gray-700 max-w-xs border-l-4 border-yellow-400 mb-6">
+                        <h3 className="font-bold mb-1">📝 遊戲說明：</h3>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li>觀察對話中的 Emoji。</li>
+                            <li>輸入或選擇正確的成語。</li>
+                            <li>街機模式需額外猜測是哪位腦朋友！</li>
+                        </ul>
+                    </div>
+                </div>
+            );
+
+            const renderCharSelect = () => (
+                <div className="flex flex-col h-full bg-white">
+                    <div className="wa-header p-4 flex items-center shadow-md">
+                        <button onClick={() => setGameState('menu')} className="mr-3 p-1 rounded-full hover:bg-white/20 active:bg-white/30">
+                            <SvgIcons.Back />
+                        </button>
+                        <h2 className="text-xl font-bold">選擇聊天對象 (學習模式)</h2>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                        {CHARACTERS.map(char => (
+                            <button 
+                                key={char.id} 
+                                onClick={() => startGame('learning', char.id)}
+                                className="w-full flex items-center p-4 border-b border-gray-200 hover:bg-gray-50 active:bg-gray-100 transition text-left"
+                            >
+                                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl shadow-sm ${char.color}`}>
+                                    {char.icon}
+                                </div>
+                                <div className="ml-4 flex-1">
+                                    <h3 className="text-lg font-bold text-gray-800">{char.name}</h3>
+                                    <p className="text-gray-500 text-sm">點擊開始與 {char.name} 展開激烈的對話</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            const renderModeSelect = () => (
+                <div className="flex flex-col h-full bg-white">
+                    <div className="wa-header p-4 flex items-center shadow-md bg-purple-700 shrink-0">
+                        <button onClick={() => setGameState('menu')} className="mr-3 p-1 rounded-full hover:bg-white/20 active:bg-white/30">
+                            <SvgIcons.Back />
+                        </button>
+                        <h2 className="text-xl font-bold">街機模式設定</h2>
+                    </div>
+                    <div className="flex flex-col items-center flex-1 p-6 text-center overflow-y-auto">
+                        <h3 className="text-2xl font-bold text-gray-800 mb-6 shrink-0 mt-4">選擇回合數量</h3>
+                        <div className="grid grid-cols-1 gap-4 w-full max-w-xs pb-8">
+                            {[5, 10, 15, 20].map(rounds => (
+                                <button 
+                                    key={rounds}
+                                    onClick={() => startGame('arcade', null, rounds)}
+                                    className="bg-white border-2 border-purple-500 text-purple-700 py-4 px-6 rounded-xl text-xl font-bold shadow-sm hover:bg-purple-50 active:bg-purple-100 transition shrink-0"
+                                >
+                                    {rounds} 回合
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderChat = () => {
+                const isArcade = mode === 'arcade';
+                const headerColor = isArcade ? 'bg-purple-700' : 'wa-header';
+                const headerName = isArcade ? '未知聯絡人 🤔' : selectedChar?.name;
+                const headerIcon = isArcade ? '❓' : selectedChar?.icon;
+                const headerIconBg = isArcade ? 'bg-gray-400' : selectedChar?.color;
+
+                return (
+                    <div className="flex flex-col h-full bg-gray-100 relative">
+                        {/* Header */}
+                        <div className={`${headerColor} p-3 flex items-center shadow-md z-10`}>
+                            <button 
+                                onClick={() => {
+                                    clearInterval(timerRef.current);
+                                    setGameState(mode === 'learning' ? 'char_select' : 'menu');
+                                }} 
+                                className="mr-2 p-1 rounded-full hover:bg-white/20 active:bg-white/30 text-white"
+                            >
+                                <SvgIcons.Back />
+                            </button>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-sm ${headerIconBg}`}>
+                                {headerIcon}
+                            </div>
+                            <div className="ml-3 text-white flex-1">
+                                <h2 className="text-lg font-bold leading-tight">{headerName}</h2>
+                                <p className="text-xs opacity-90">{isTyping ? '輸入中...' : '在線上'}</p>
+                            </div>
+                            <div className="text-white text-right">
+                                <div className="text-xs font-bold bg-black/20 px-2 py-1 rounded-full">
+                                    分數: {score}
+                                </div>
+                                <div className="text-xs mt-1">
+                                    {currentRound}/{totalRounds}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Chat Area */}
+                        <div className="flex-1 wa-bg overflow-y-auto p-4 flex flex-col gap-3">
+                            {/* Information bubble */}
+                            <div className="self-center bg-[#e1f3fb] text-gray-700 text-xs py-1 px-3 rounded-md shadow-sm mb-2 text-center max-w-[80%]">
+                                遊戲開始！根據 Emoji 猜測四字成語。
+                            </div>
+
+                            {messages.map(msg => (
+                                msg.sender === 'system' ? (
+                                    <div key={msg.id} className="self-center bg-yellow-100 text-yellow-800 text-sm py-2 px-4 rounded-lg shadow-sm font-bold msg-enter text-center my-2">
+                                        {msg.text}
+                                    </div>
+                                ) : (
+                                    <div key={msg.id} className={`max-w-[80%] flex flex-col relative msg-enter ${msg.sender === 'me' ? 'self-end wa-message-sent' : 'self-start wa-message-received'} p-3 shadow-sm`}>
+                                        <span className={msg.sender === 'them' ? 'text-3xl tracking-widest' : 'text-lg text-gray-800'}>
+                                            {msg.text}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 self-end mt-1 flex items-center gap-1">
+                                            {msg.time} {msg.sender === 'me' && <SvgIcons.Check />}
+                                        </span>
+                                    </div>
+                                )
+                            ))}
+
+                            {isTyping && (
+                                <div className="self-start wa-message-received p-3 shadow-sm msg-enter">
+                                    <div className="typing-indicator">
+                                        <div className="typing-dot"></div>
+                                        <div className="typing-dot"></div>
+                                        <div className="typing-dot"></div>
+                                    </div>
+                                </div>
+                            )}
+                            <div ref={chatEndRef} />
+                        </div>
+
+                        {/* Input Area / Controls */}
+                        {!isTyping && !feedback && !guessingChar && (
+                            <div className="bg-[#f0f2f5] p-2 flex flex-col gap-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+                                {/* Timer Bar */}
+                                <div className="flex items-center px-2">
+                                    <div className="flex-1 h-2 bg-gray-300 rounded-full overflow-hidden">
+                                        <div 
+                                            className={`h-full transition-all duration-1000 linear ${timer <= 5 ? 'bg-red-500' : 'bg-[#008069]'}`}
+                                            style={{ width: `${(timer / (mode === 'learning' ? 30 : 15)) * 100}%` }}
+                                        ></div>
+                                    </div>
+                                    <span className={`ml-3 text-sm font-bold ${timer <= 5 ? 'text-red-600 animate-pulse' : 'text-gray-600'}`}>
+                                        00:{timer < 10 ? `0${timer}` : timer}
+                                    </span>
+                                </div>
+
+                                {showChoices ? (
+                                    <div className="grid grid-cols-1 gap-2 p-1 msg-enter">
+                                        {choices.map((choice, idx) => (
+                                            <button 
+                                                key={idx}
+                                                onClick={() => handleChoiceSelect(choice)}
+                                                className="bg-white border-2 border-gray-200 text-gray-800 py-3 rounded-xl text-lg font-bold shadow-sm hover:bg-gray-50 active:bg-gray-200 transition"
+                                            >
+                                                {choice.text}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleSendText} className="flex items-center gap-2">
+                                        <input 
+                                            type="text" 
+                                            value={inputText}
+                                            onChange={(e) => setInputText(e.target.value)}
+                                            placeholder="輸入四字成語..."
+                                            className="flex-1 rounded-full py-3 px-4 border-none focus:ring-2 focus:ring-[#008069] outline-none shadow-sm text-lg"
+                                            maxLength={4}
+                                        />
+                                        {inputText.trim() ? (
+                                            <button type="submit" className="bg-[#008069] text-white p-3 rounded-full shadow-md active:bg-[#00695c] transition">
+                                                <SvgIcons.Send />
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                type="button" 
+                                                onClick={() => { clearInterval(timerRef.current); handleTimeout(currentIdiom); }}
+                                                className="bg-gray-200 text-gray-600 py-3 px-4 rounded-full text-sm font-bold shadow-sm active:bg-gray-300 transition whitespace-nowrap"
+                                            >
+                                                顯示選擇題
+                                            </button>
+                                        )}
+                                    </form>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Character Guessing Area (Arcade) */}
+                        {guessingChar && (
+                            <div className="bg-white p-3 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] msg-enter rounded-t-2xl">
+                                <p className="text-center font-bold text-gray-700 mb-3">請選擇發送此訊息的角色：</p>
+                                <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-[40vh] p-1 no-scrollbar">
+                                    {CHARACTERS.map(char => (
+                                        <button
+                                            key={char.id}
+                                            onClick={() => handleCharGuess(char.id)}
+                                            className={`${char.color} ${char.textColor} rounded-xl p-2 flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition min-h-[80px]`}
+                                        >
+                                            <span className="text-3xl">{char.icon}</span>
+                                            <span className="text-xs font-bold text-center leading-tight">{char.name.split(' ')[0]}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Feedback Modal Overlay */}
+                        {feedback && (
+                            <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-[popIn_0.2s_ease-out]">
+                                <div className="bg-white rounded-2xl w-full max-w-sm p-6 flex flex-col items-center text-center shadow-2xl">
+                                    <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl mb-4 ${feedback.type === 'correct' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                        {feedback.type === 'correct' ? '✅' : '❌'}
+                                    </div>
+                                    <h2 className={`text-2xl font-bold mb-2 ${feedback.type === 'correct' ? 'text-green-600' : 'text-red-600'}`}>
+                                        {feedback.title}
+                                    </h2>
+                                    <div className="text-gray-700 whitespace-pre-line text-lg bg-gray-50 p-4 rounded-xl w-full text-left">
+                                        {feedback.text}
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={nextStep}
+                                        className={`mt-6 w-full py-3 rounded-xl text-lg font-bold text-white shadow-md transition transform active:scale-95 ${feedback.type === 'correct' ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'}`}
+                                    >
+                                        繼續
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderSummary = () => (
+                <div className="flex flex-col items-center h-full px-6 py-10 text-center bg-gradient-to-b from-blue-50 to-white animate-[popIn_0.5s_ease-out] overflow-y-auto">
+                    <div className="text-7xl shrink-0 mb-4">🏆</div>
+                    <h1 className="text-3xl shrink-0 font-bold text-gray-800 mb-2">完成訓練！</h1>
+                    <p className="text-gray-600 shrink-0 mb-8">你真是太棒了，學會了好多情緒成語！</p>
+                    
+                    <div className="bg-white shrink-0 w-full max-w-xs rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
+                        <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                            <span className="text-gray-500 font-bold">總得分</span>
+                            <span className="text-3xl font-black text-blue-600">{score}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-3">
+                            <span className="text-gray-500 font-bold">最高連勝</span>
+                            <span className="text-2xl font-bold text-orange-500">{maxStreak}🔥</span>
+                        </div>
+                    </div>
+
+                    <button 
+                        onClick={() => setGameState('menu')}
+                        className="w-full shrink-0 max-w-xs bg-[#008069] text-white py-4 px-6 rounded-xl text-xl font-bold shadow-md hover:bg-[#00695c] transition transform hover:scale-105 active:scale-95"
+                    >
+                        返回主選單
+                    </button>
+                </div>
+            );
+
+            // App Container Layout
+            return (
+                <div className="w-full h-screen max-w-md mx-auto bg-white shadow-2xl overflow-hidden relative sm:h-[90vh] sm:mt-[5vh] sm:rounded-[2rem] sm:border-8 border-gray-900">
+                    {gameState === 'menu' && renderMenu()}
+                    {gameState === 'char_select' && renderCharSelect()}
+                    {gameState === 'mode_select' && renderModeSelect()}
+                    {gameState === 'chat' && renderChat()}
+                    {gameState === 'summary' && renderSummary()}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
